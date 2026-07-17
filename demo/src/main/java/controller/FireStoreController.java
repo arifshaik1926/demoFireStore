@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 //import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -62,6 +64,12 @@ public class FireStoreController {
             }
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
+
+    }
+    @GetMapping("/get-all-data")
+    public List<Map<String, Object>> getAllData() throws ExecutionException, InterruptedException {
+        // Assuming your service has a method that returns a List of Maps
+        return nativeFirestoreService.getAllDocuments();
     }
 
 }
