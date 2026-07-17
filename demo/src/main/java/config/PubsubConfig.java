@@ -19,10 +19,18 @@ public class PubsubConfig {
     @Bean
     public CredentialsProvider gcpCredentialsProvider() {
         return () -> {
-            try (InputStream is = new ClassPathResource(KEY_FILE_NAME).getInputStream()) {
-                return GoogleCredentials.fromStream(is);
+            InputStream is = getClass().getClassLoader().getResourceAsStream(KEY_FILE_NAME);
+            if (is != null) {
+                try (is) {
+                    return GoogleCredentials.fromStream(is);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to load local key", e);
+                }
+            }
+            try {
+                return GoogleCredentials.getApplicationDefault();
             } catch (IOException e) {
-                throw new RuntimeException("Failed to load serviceAccountKey.json from resources", e);
+                throw new RuntimeException("Failed to load application default credentials", e);
             }
         };
     }
@@ -35,9 +43,14 @@ public class PubsubConfig {
                 if (credentials instanceof ServiceAccountCredentials) {
                     return ((ServiceAccountCredentials) credentials).getProjectId();
                 }
-                throw new IllegalStateException("Service account key does not contain a valid Project ID.");
+
+                String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+                if (projectId == null) {
+                    projectId = com.google.cloud.ServiceOptions.getDefaultProjectId();
+                }
+                return projectId;
             } catch (IOException e) {
-                throw new RuntimeException("Failed to extract Project ID from credentials", e);
+                throw new RuntimeException("Failed to extract Project ID", e);
             }
         };
     }
